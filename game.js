@@ -240,19 +240,30 @@ const sfx = (() => {
       fetch(`${name}.mp3`)
         .then((r) => (r.ok ? r.arrayBuffer() : null))
         .then((buf) => buf && ac.decodeAudioData(buf))
-        .then((clip) => { if (clip) clips[name] = clip; })
+        .then((buf) => { if (buf) clips[name] = { buf, gain: peakGain(buf) }; })
         .catch(() => {});
     }
+  }
+
+  // The clips are recorded at very different volumes (fahhh.mp3 peaks at about a third of
+  // gawk.mp3 and got lost under the crunch), so scale each one to the same peak level.
+  function peakGain(buf) {
+    let peak = 0;
+    for (let c = 0; c < buf.numberOfChannels; c++) {
+      for (const v of buf.getChannelData(c)) if (Math.abs(v) > peak) peak = Math.abs(v);
+    }
+    return peak > 0 ? 0.95 / peak : 1;
   }
 
   // Play a clip, optionally only its first `maxSec` seconds with a short fade-out.
   function playClip(clip, t, maxSec = 0) {
     const src = ac.createBufferSource();
-    src.buffer = clip;
+    src.buffer = clip.buf;
     const g = ac.createGain();
+    g.gain.value = clip.gain;
     src.connect(g).connect(ac.destination);
-    if (maxSec && clip.duration > maxSec) {
-      g.gain.setValueAtTime(1, t + maxSec - 0.4);
+    if (maxSec && clip.buf.duration > maxSec) {
+      g.gain.setValueAtTime(clip.gain, t + maxSec - 0.4);
       g.gain.linearRampToValueAtTime(0.0001, t + maxSec);
       src.start(t, 0, maxSec);
     } else {
@@ -516,13 +527,17 @@ function bite(it, now, f) {
     it.bites.push({ angle: it.biteAngle, k: it.taken - 1 });
     rebuildSprite(it);
   }
-  if (it.def.drink) sfx.sip();
-  else if (it.def.soft) sfx.slurp();
-  else sfx.crunch();
+  const last = it.taken >= it.def.bites;
+  // The last bite plays only the finishing clip (fahhh/gawk) so the crunch doesn't drown it out.
+  if (!last) {
+    if (it.def.drink) sfx.sip();
+    else if (it.def.soft) sfx.slurp();
+    else sfx.crunch();
+  }
   burst(mouth.x, mouth.y, it.def, 14, it.def.drink);
   popText(mouth.x, mouth.y - it.size * 0.5, pick(it.def.words || (it.def.drink ? SIP_WORDS : BITE_WORDS)), "#fff");
 
-  if (it.taken >= it.def.bites) finish(it, now, mouth);
+  if (last) finish(it, now, mouth);
 }
 
 function finish(it, now, mouth) {
