@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Snack Attack</title>
+  <link rel="stylesheet" href="style.css?v=23" />
+</head>
+<body>
+  <video id="cam" playsinline muted autoplay></video>
+  <canvas id="stage"></canvas>
+
+  <div id="hud" hidden>
+    <div class="score" id="score"></div>
+    <div id="status"></div>
+    <div class="tools">
+      <button id="btn-sound" hidden title="Turn on sound">🔇 Tap for sound</button>
+      <button id="btn-reset" title="Reset score">↺<span class="lbl"> Reset</span></button>
+    </div>
+    <pre id="diag" hidden></pre>
+    <div id="toast" hidden></div>
+    <div class="hint">Reach toward a snack ✋ (fist or pinch grabs instantly) → bring it to your mouth → open &amp; close to bite 😋</div>
+  </div>
+
+  <!-- Only shown while the camera starts, or if it fails. -->
+  <div id="overlay">
+    <div class="card">
+      <div class="logo">🍔 🥪 🥤</div>
+      <h1>Snack Attack</h1>
+      <p id="msg">Starting camera…</p>
+      <button id="start" hidden>Try again</button>
+    </div>
+  </div>
+
+  <script type="module" src="game.js?v=23"></script>
+</body>
+</html>
